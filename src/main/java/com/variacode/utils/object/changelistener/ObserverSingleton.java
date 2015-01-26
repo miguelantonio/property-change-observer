@@ -25,7 +25,7 @@ public enum ObserverSingleton {
     private final List<ChangeListener> listeners = new ArrayList<>();
 
     protected void change(Change change) {
-        listeners.stream().forEach((c) -> {
+        listeners.stream().forEach(c -> {
             c.change(change);
         });
     }

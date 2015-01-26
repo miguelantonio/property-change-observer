@@ -26,21 +26,16 @@ public class ObservableObjectAspect {
 
     @Pointcut("execution(public * *(..))")
     public void publicMethod() {
+        //public Method
     }
 
     @Around("execution(* *.set*(..)) && @within(annotation)")
     public Object setMethod(ProceedingJoinPoint joinPoint, Observe annotation) throws Throwable {
         ObserverSingleton.INSTANCE.change(new Change(annotation.stream(),
-                Introspector.decapitalize(//TODO: *ugh* author pls
+                Introspector.decapitalize(
                         joinPoint.toShortString().replaceFirst("execution\\(" + joinPoint.getThis().getClass().getSimpleName() + ".set", "")
-                                .replaceAll("\\.", "").replaceAll("\\)", "").replaceAll("\\(", "")
+                        .replaceAll("\\.", "").replaceAll("\\)", "").replaceAll("\\(", "")
                 ), joinPoint.getArgs()[0], joinPoint.getThis()));
         return joinPoint.proceed();
     }
-    
-    //TODO: constructor
-    
-    //TODO: Use Property Change Listener
-    
-    //TODO: Single methods or fields (better)
 }
