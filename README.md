@@ -2,6 +2,8 @@
 Java object property change observer, produces streams of object changes using the @Observe annotation on the classes you want to follow
 
 You will need to add the following to your POM, considering the java version you use:
+
+```xml
 	<build>
         <plugins>
             <plugin>
@@ -29,7 +31,7 @@ You will need to add the following to your POM, considering the java version you
             </plugin>
         </plugins>
     </build>
-
+```xml
 
 ## .
 
