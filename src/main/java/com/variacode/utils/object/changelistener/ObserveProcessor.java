@@ -72,10 +72,10 @@ public class ObserveProcessor extends AbstractProcessor {
         for (Element element : roundEnv.getElementsAnnotatedWith(Observe.class)) {
             if (element.getKind() == ElementKind.CLASS) {
                 TypeElement typeElement = (TypeElement) element;
-                if (typeElement.getAnnotation( javax.annotation.processing.Generated.class ) == null) {
+                if (typeElement.getAnnotation(javax.annotation.processing.Generated.class) == null) {
                     targetClasses.add(typeElement);
                 }
-            } else if (element.getKind() == ElementKind.METHOD) {
+            } else if (element.getKind() == ElementKind.METHOD || element.getKind() == ElementKind.CONSTRUCTOR) {
                 Element enclosing = element.getEnclosingElement();
                 if (enclosing instanceof TypeElement typeElement
                         && enclosing.getKind() == ElementKind.CLASS
@@ -145,6 +145,7 @@ public class ObserveProcessor extends AbstractProcessor {
             }
 
             out.println("import com.variacode.utils.object.changelistener.Change;");
+            out.println("import com.variacode.utils.object.changelistener.Observe;");
             out.println("import com.variacode.utils.object.changelistener.ObserverSingleton;");
             out.println("import java.util.Objects;");
             out.println("import javax.annotation.processing.Generated;");
@@ -154,7 +155,7 @@ public class ObserveProcessor extends AbstractProcessor {
             out.println();
 
             for (ExecutableElement constructor : constructors) {
-                writeConstructor(out, generatedSimpleName, constructor);
+                writeConstructor(out, generatedSimpleName, constructor, classObserve);
             }
 
             for (SetterInfo setter : settersToOverride) {
@@ -254,7 +255,7 @@ public class ObserveProcessor extends AbstractProcessor {
         return memberPackage.equals(targetPackage);
     }
 
-    private void writeConstructor(PrintWriter out, String generatedSimpleName, ExecutableElement constructor) {
+    private void writeConstructor(PrintWriter out, String generatedSimpleName, ExecutableElement constructor, Observe classObserve) {
         String visibility = getVisibilityPrefix(constructor.getModifiers());
         String params = formatParameters(constructor.getParameters());
         String args = constructor.getParameters().stream()
@@ -262,8 +263,18 @@ public class ObserveProcessor extends AbstractProcessor {
                 .collect(Collectors.joining(", "));
         String throwsClause = formatThrows(constructor.getThrownTypes());
 
+        Observe constructorObserve = constructor.getAnnotation(Observe.class);
+        boolean emitOnInit = constructorObserve != null || (classObserve != null && classObserve.observeConstruction());
+        String stream = constructorObserve != null
+                ? constructorObserve.stream()
+                : (classObserve != null ? classObserve.stream() : Observe.DEFAULT_STREAM);
+
         out.println("    " + visibility + generatedSimpleName + "(" + params + ")" + throwsClause + " {");
         out.println("        super(" + args + ");");
+        if (emitOnInit) {
+            out.println("        ObserverSingleton.INSTANCE.change(new Change<>(\""
+                    + escapeJavaString(stream) + "\", Observe.INIT_FIELD_NAME, null, this, this));");
+        }
         out.println("    }");
         out.println();
     }

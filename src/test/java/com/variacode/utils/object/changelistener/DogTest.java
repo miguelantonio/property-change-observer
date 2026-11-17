@@ -17,7 +17,7 @@ package com.variacode.utils.object.changelistener;
 
 import static com.variacode.utils.object.changelistener.DogTest.STREAM;
 
-@Observe(stream = STREAM)
+@Observe(stream = STREAM, observeConstruction = true)
 public class DogTest {
 
     public static final String STREAM = "animals";

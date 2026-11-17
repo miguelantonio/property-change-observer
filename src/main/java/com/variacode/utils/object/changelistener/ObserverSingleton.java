@@ -52,11 +52,8 @@ public enum ObserverSingleton {
      * Subscribes a listener to a specific stream and returns an {@link AutoCloseable} handle to unsubscribe.
      */
     public AutoCloseable subscribe(String stream, ChangeListener listener) {
-        Objects.requireNonNull(stream, "stream must not be null");
-        Objects.requireNonNull(listener, "listener must not be null");
-        List<ChangeListener> scoped = streamListeners.computeIfAbsent(stream, k -> new CopyOnWriteArrayList<>());
-        scoped.add(listener);
-        return () -> scoped.remove(listener);
+        addChangeListener(stream, listener);
+        return () -> removeChangeListener(stream, listener);
     }
 
     public void addChangeListener(ChangeListener listener) {
@@ -64,8 +61,24 @@ public enum ObserverSingleton {
         this.globalListeners.add(listener);
     }
 
+    public void addChangeListener(String stream, ChangeListener listener) {
+        Objects.requireNonNull(stream, "stream must not be null");
+        Objects.requireNonNull(listener, "listener must not be null");
+        this.streamListeners.computeIfAbsent(stream, k -> new CopyOnWriteArrayList<>()).add(listener);
+    }
+
     public void removeChangeListener(ChangeListener listener) {
         this.globalListeners.remove(listener);
+    }
+
+    public void removeChangeListener(String stream, ChangeListener listener) {
+        if (stream == null || listener == null) {
+            return;
+        }
+        List<ChangeListener> scoped = this.streamListeners.get(stream);
+        if (scoped != null) {
+            scoped.remove(listener);
+        }
     }
 
     public void removeAllChangeListeners() {

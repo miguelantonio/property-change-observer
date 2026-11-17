@@ -38,19 +38,18 @@ public class ObservableObjectAspectTest {
             expResult[i] = i + 1;
         }
 
-        ObserverSingleton.INSTANCE.addChangeListener(new ChangeListener() {
+        DogTest trufa = new ObservableDogTest("Trufa", "Boston Terrier", 0);
+
+        ObserverSingleton.INSTANCE.addChangeListener(STREAM, new ChangeListener() {
             int i = 0;
 
             @Override
             public void change(Change<?> change) {
-                if (change.getChangeStream().equals(STREAM)) {
-                    result[i] = (Integer) change.getFieldValue();
-                    i++;
-                }
+                result[i] = (Integer) change.getFieldValue();
+                i++;
             }
         });
 
-        DogTest trufa = new ObservableDogTest("Trufa", "Boston Terrier", 0);
         for (int input : expResult) {
             trufa.setDaysOld(input);
         }
@@ -59,20 +58,28 @@ public class ObservableObjectAspectTest {
     }
 
     @Test
-    public void testOldValueNewValueAndDeduplication() throws Exception {
+    public void testConstructionAndOldNewValueAndDeduplication() throws Exception {
         List<Change<?>> events = new ArrayList<>();
         try (AutoCloseable sub = ObserverSingleton.INSTANCE.subscribe(STREAM, events::add)) {
             DogTest trufa = new ObservableDogTest("Trufa", "Boston Terrier", 10);
 
-            // Setting the exact same value should not emit a change event
-            trufa.setName("Trufa");
-            assertTrue(events.isEmpty());
+            // 1. Object construction emits an <init> event
+            assertEquals(1, events.size());
+            Change<?> initEvent = events.get(0);
+            assertEquals(STREAM, initEvent.changeStream());
+            assertEquals(Observe.INIT_FIELD_NAME, initEvent.fieldName());
+            assertSame(trufa, initEvent.fieldValue());
+            assertSame(trufa, initEvent.object());
 
-            // Changing the value emits an event with both oldValue and newValue AFTER state mutation
-            trufa.setName("Trufita");
+            // 2. Setting the exact same value should not emit a change event
+            trufa.setName("Trufa");
             assertEquals(1, events.size());
 
-            Change<?> change = events.get(0);
+            // 3. Changing the value emits an event with both oldValue and newValue AFTER state mutation
+            trufa.setName("Trufita");
+            assertEquals(2, events.size());
+
+            Change<?> change = events.get(1);
             assertEquals(STREAM, change.changeStream());
             assertEquals("name", change.fieldName());
             assertEquals("Trufa", change.oldValue());
@@ -84,6 +91,6 @@ public class ObservableObjectAspectTest {
         // After closing the subscription, further changes are not received
         DogTest anotherDog = new ObservableDogTest("Max", "Pug", 5);
         anotherDog.setDaysOld(6);
-        assertEquals(1, events.size());
+        assertEquals(2, events.size());
     }
 }
