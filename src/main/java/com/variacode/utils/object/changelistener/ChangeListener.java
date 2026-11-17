@@ -17,7 +17,8 @@ package com.variacode.utils.object.changelistener;
 
 import java.util.EventListener;
 
-public interface ChangeListener extends EventListener{
+@FunctionalInterface
+public interface ChangeListener extends EventListener {
 
-    public void change(Change change);
+    void change(Change<?> change);
 }

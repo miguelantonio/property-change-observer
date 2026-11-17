@@ -3,45 +3,39 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.variacode.utils.object.changelistener</groupId>
     <artifactId>PropertyChangeObserver</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
     </properties>
     <dependencies>
         <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-            <version>1.8.2</version>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.10</version>
+            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>aspectj-maven-plugin</artifactId>
-                <version>1.7</version>
-                <configuration>
-                    <complianceLevel>1.8</complianceLevel>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
                 <executions>
                     <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>test-compile</goal>
-                        </goals>
+                        <id>default-compile</id>
                         <configuration>
-                            <showWeaveInfo>true</showWeaveInfo>
+                            <proc>none</proc>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <annotationProcessors>
+                                <annotationProcessor>com.variacode.utils.object.changelistener.ObserveProcessor</annotationProcessor>
+                            </annotationProcessors>
                         </configuration>
                     </execution>
                 </executions>

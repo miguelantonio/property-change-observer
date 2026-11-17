@@ -1,38 +1,53 @@
 # property-change-observer
-Java object property change observer, produces streams of object changes using the @Observe annotation on the classes you want to follow
 
-You will need to add the following to your POM, considering the java version you use:
+Zero-dependency Java object property change observer using a standard `javac` Annotation Processor (`@Observe`).
 
-```xml
-	<build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>aspectj-maven-plugin</artifactId>
-                <version>1.7</version>
-                <configuration>
-                    <complianceLevel>1.8</complianceLevel>
-                    <source>1.8</source>
-                    <target>1.8</target>v
-                    <aspectLibraries>
-                        <aspectLibrary>
-                        	<groupId>com.variacode.utils.object.changelistener</groupId>
-    						<artifactId>PropertyChangeObserver</artifactId>
-                        </aspectLibrary>
-                    </aspectLibraries>
-                </configuration>
-                <executions>v
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+At compile time, classes annotated with `@Observe` automatically get a generated `Observable<ClassName>` subclass in the same package that intercepts setter mutations, compares old and new values, and publishes immutable `Change` records through `ObserverSingleton`.
+
+## Requirements
+
+- Java 17+ (compatible with Java 17, 21, 25+)
+- No AspectJ or bytecode weaving plugins required (`javac` discovers the processor automatically via `META-INF/services/javax.annotation.processing.Processor`).
+
+## Usage
+
+### 1. Annotate your class with `@Observe`
+
+```java
+package com.example;
+
+import com.variacode.utils.object.changelistener.Observe;
+
+@Observe(stream = "animals")
+public class Dog {
+    private String name;
+    private int daysOld;
+
+    public Dog(String name, int daysOld) {
+        this.name = name;
+        this.daysOld = daysOld;
+    }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public int getDaysOld() { return daysOld; }
+    public void setDaysOld(int daysOld) { this.daysOld = daysOld; }
+}
 ```
 
-## .
+### 2. Subscribe to changes and instantiate `Observable<ClassName>`
+
+```java
+try (AutoCloseable sub = ObserverSingleton.INSTANCE.subscribe("animals", change -> {
+    System.out.printf("Field '%s' changed from %s to %s on %s%n",
+            change.fieldName(), change.oldValue(), change.fieldValue(), change.object());
+})) {
+    Dog trufa = new ObservableDog("Trufa", 0);
+    trufa.setDaysOld(64);
+}
+```
+
+## Dedication
 
 This project is dedicated to Trufita, rest in peace.

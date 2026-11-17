@@ -15,18 +15,26 @@
  */
 package com.variacode.utils.object.changelistener;
 
-public class Change {
-    
-    private final String changeStream;
-    private final String fieldName;
-    private final Object fieldValue;
-    private final Object object;
+/**
+ * Immutable event record representing a property mutation on an observed object.
+ *
+ * @param <T>          the type of the observed object
+ * @param changeStream the stream identifier configured in {@link Observe#stream()}
+ * @param fieldName    the decapitalized property name
+ * @param oldValue     the previous value of the property (or {@code null} if unavailable)
+ * @param fieldValue   the new value assigned to the property
+ * @param object       the observed instance that was mutated
+ */
+public record Change<T>(
+        String changeStream,
+        String fieldName,
+        Object oldValue,
+        Object fieldValue,
+        T object
+) {
 
-    Change(String changeStream, String fieldName, Object fieldValue, Object object) {
-        this.changeStream = changeStream;
-        this.fieldName = fieldName;
-        this.fieldValue = fieldValue;
-        this.object = object;
+    public Change(String changeStream, String fieldName, Object fieldValue, T object) {
+        this(changeStream, fieldName, null, fieldValue, object);
     }
 
     public String getChangeStream() {
@@ -37,17 +45,15 @@ public class Change {
         return fieldName;
     }
 
+    public Object getOldValue() {
+        return oldValue;
+    }
+
     public Object getFieldValue() {
         return fieldValue;
     }
 
-    public Object getObject() {
+    public T getObject() {
         return object;
     }
-
-    @Override
-    public String toString() {
-        return "Change{" + "changeStream=" + changeStream + ", fieldName=" + fieldName + ", fieldValue=" + fieldValue + ", object=" + object + '}';
-    }
-    
 }

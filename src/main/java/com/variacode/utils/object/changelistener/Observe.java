@@ -15,9 +15,15 @@
  */
 package com.variacode.utils.object.changelistener;
 
-@java.lang.annotation.Target({java.lang.annotation.ElementType.TYPE,java.lang.annotation.ElementType.METHOD})
-@java.lang.annotation.Retention(value = java.lang.annotation.RetentionPolicy.RUNTIME)
-@java.lang.annotation.Inherited
-public @interface Observe {  
-    String stream() default "class";
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Observe {
+    String DEFAULT_STREAM = "class";
+
+    String stream() default DEFAULT_STREAM;
 }

@@ -15,30 +15,61 @@
  */
 package com.variacode.utils.object.changelistener;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public enum ObserverSingleton {
 
     INSTANCE;
 
-    private final List<ChangeListener> listeners = new ArrayList<>();
+    private final List<ChangeListener> globalListeners = new CopyOnWriteArrayList<>();
+    private final ConcurrentHashMap<String, List<ChangeListener>> streamListeners = new ConcurrentHashMap<>();
 
-    protected void change(Change change) {
-        listeners.stream().forEach(c -> {
-            c.change(change);
-        });
+    public void change(Change<?> change) {
+        Objects.requireNonNull(change, "change must not be null");
+        List<ChangeListener> scoped = streamListeners.get(change.changeStream());
+        if (scoped != null) {
+            for (ChangeListener listener : scoped) {
+                listener.change(change);
+            }
+        }
+        for (ChangeListener listener : globalListeners) {
+            listener.change(change);
+        }
+    }
+
+    /**
+     * Subscribes a listener to all streams and returns an {@link AutoCloseable} handle to unsubscribe.
+     */
+    public AutoCloseable subscribe(ChangeListener listener) {
+        addChangeListener(listener);
+        return () -> removeChangeListener(listener);
+    }
+
+    /**
+     * Subscribes a listener to a specific stream and returns an {@link AutoCloseable} handle to unsubscribe.
+     */
+    public AutoCloseable subscribe(String stream, ChangeListener listener) {
+        Objects.requireNonNull(stream, "stream must not be null");
+        Objects.requireNonNull(listener, "listener must not be null");
+        List<ChangeListener> scoped = streamListeners.computeIfAbsent(stream, k -> new CopyOnWriteArrayList<>());
+        scoped.add(listener);
+        return () -> scoped.remove(listener);
     }
 
     public void addChangeListener(ChangeListener listener) {
-        this.listeners.add(listener);
+        Objects.requireNonNull(listener, "listener must not be null");
+        this.globalListeners.add(listener);
     }
 
     public void removeChangeListener(ChangeListener listener) {
-        this.listeners.remove(listener);
+        this.globalListeners.remove(listener);
     }
 
     public void removeAllChangeListeners() {
-        this.listeners.removeAll(this.listeners);
+        this.globalListeners.clear();
+        this.streamListeners.clear();
     }
 }

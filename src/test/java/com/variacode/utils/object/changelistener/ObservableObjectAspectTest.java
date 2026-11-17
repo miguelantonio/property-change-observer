@@ -16,17 +16,21 @@
 package com.variacode.utils.object.changelistener;
 
 import static com.variacode.utils.object.changelistener.DogTest.STREAM;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class ObservableObjectAspectTest {
 
-    /**
-     * Test of class ObservableObjectAspect.
-     */
+    @After
+    public void tearDown() {
+        ObserverSingleton.INSTANCE.removeAllChangeListeners();
+    }
+
     @Test
-    public void test() {
-        System.out.println("ObservableObjectAspect");
+    public void testDaysOldStream() {
         final int trufitaDaysOld = 64;
         int[] result = new int[trufitaDaysOld];
         int[] expResult = new int[trufitaDaysOld];
@@ -38,14 +42,15 @@ public class ObservableObjectAspectTest {
             int i = 0;
 
             @Override
-            public void change(Change change) {
+            public void change(Change<?> change) {
                 if (change.getChangeStream().equals(STREAM)) {
                     result[i] = (Integer) change.getFieldValue();
                     i++;
                 }
             }
         });
-        DogTest trufa = new DogTest("Trufa", "Boston Terrier", 0);
+
+        DogTest trufa = new ObservableDogTest("Trufa", "Boston Terrier", 0);
         for (int input : expResult) {
             trufa.setDaysOld(input);
         }
@@ -53,4 +58,32 @@ public class ObservableObjectAspectTest {
         assertArrayEquals(expResult, result);
     }
 
+    @Test
+    public void testOldValueNewValueAndDeduplication() throws Exception {
+        List<Change<?>> events = new ArrayList<>();
+        try (AutoCloseable sub = ObserverSingleton.INSTANCE.subscribe(STREAM, events::add)) {
+            DogTest trufa = new ObservableDogTest("Trufa", "Boston Terrier", 10);
+
+            // Setting the exact same value should not emit a change event
+            trufa.setName("Trufa");
+            assertTrue(events.isEmpty());
+
+            // Changing the value emits an event with both oldValue and newValue AFTER state mutation
+            trufa.setName("Trufita");
+            assertEquals(1, events.size());
+
+            Change<?> change = events.get(0);
+            assertEquals(STREAM, change.changeStream());
+            assertEquals("name", change.fieldName());
+            assertEquals("Trufa", change.oldValue());
+            assertEquals("Trufita", change.fieldValue());
+            assertSame(trufa, change.object());
+            assertEquals("Trufita", ((DogTest) change.object()).getName());
+        }
+
+        // After closing the subscription, further changes are not received
+        DogTest anotherDog = new ObservableDogTest("Max", "Pug", 5);
+        anotherDog.setDaysOld(6);
+        assertEquals(1, events.size());
+    }
 }
